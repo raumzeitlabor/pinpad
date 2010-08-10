@@ -1,0 +1,35 @@
+- 0-9
+- enter-taste
+- invisible-taste
+- ich-geh-raus-taste
+- LED (orange für bereit, grün du darfst rein, rot für du kommst hier net rein)
+- piepsen
+
+
+
+--- mikrokontroller draußen vor der tür (frontend)
+* fragt das pinpad ab auf tastendrücke
+* schickt tastendrücke via UART raus (protokoll siehe unten)
+* hat zwei ansteuerbare LEDs + power-LED
+* kann piepsen
+
+---- protokoll
+* seriell auf mikrokontroller-pegel (5V) mit 9600 8N1
+* start of packet, end of packet (damit man resyncen kann)
+* fixe länge (damit bufferverwaltung einfach ist)
+* human-readable
+* befehle von draußen nach drinnen:
+  ^PAD c  $
+  ^PING cc$
+  ^PONG cc$
+* befehle von drinnen nach draußen:
+  ^LED 1 1$ (led 1 in modus 1 ansteuern)
+   (modi: 1 -- kurz leuchten (0.25s) für bestätigung des tastendrucks
+          2 -- lang leuchten (1s) für tür offen ja/nein
+	  3 -- dauerhaft blinken für kaputt oder es ist offen
+  ^BEEP 1 $ (piepsen in modus 1)
+   (modi: 1 -- kurz piepsen (0.1s) für bestätigung des tastendrucks
+          2 -- lang piepsen (0.5s) für access denied
+  ^PING cc$
+  ^PONG cc$ (beide LEDs blinken kurz)
+* paketgröße also 11 byte (9 byte + \r\n)
