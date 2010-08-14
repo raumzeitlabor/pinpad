@@ -3,13 +3,16 @@ Pinbelegung des Patchkabels von draußen nach drinnen durch die Wand
 
 1   orange        TX (UART)
 2   orange/weiß   RX (UART)
-3   grün/weiß     GND
-4   grün          GND (UART)
-5   braun         +9V
+3   grün/weiß     VCC (5 - 24 V)
+4   grün          GND
+5   braun         GND (UART)
 
 Pin 1/2 sind die serielle Schnittstelle (5V-Pegel, direkt vom Mikrokontroller)
-für die Kommunikation mit dem Mikrokontroller drinnen. Pin 4 ist der
-GND-Referenzpin, falls man einen USB2Serial-Adapter anschließt.
+für die Kommunikation mit dem Mikrokontroller drinnen. Pin 5 ist der
+GND-Referenzpin, falls man einen USB2Serial-Adapter anschließt (entspricht GND
+am Mikrocontroller).
 
-Pin 3/5 sind die Stromversorgung (noch nicht Hausbus, wird also ausgetauscht)
-mit dem 9V-Netzteil, welches auch die Laborboards versorgt.
+Pin 3/4 sind die Stromversorgung (noch nicht Hausbus, wird also ausgetauscht)
+mit dem 9V-Netzteil, welches auch die Laborboards versorgt. Der Spannungs-
+wandler ist theoretisch für 5 - 24 Volt spezifiziert; unserer Erfahrung nach
+sollten es aber mindestens 7 V sein.
