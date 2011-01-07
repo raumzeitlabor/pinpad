@@ -12,7 +12,8 @@
 #include <stdio.h>
 #include <string.h>
 
-static char pin[9];
+/* seite 84 */
+static char pin[11];
 static uint8_t pincnt = 0;
 static volatile char serbuf[64];
 static volatile uint8_t sercnt = 0;
@@ -52,21 +53,34 @@ static void uart_puts(const char *str) {
 static void handle_command(const char *buffer) {
     if (strncmp(buffer, "^PAD ", strlen("^PAD ")) == 0) {
         char c = buffer[5];
-        if (pincnt < 7) {
+        if (pincnt < 10) {
             pin[pincnt] = c;
             pincnt++;
         }
         uart_puts("^LED 2 1$\n");
         uart_puts("^BEEP 1 $\n");
         char *str;
-        if (pincnt == 5 && strncmp(pin, "1337#", 5) == 0) {
+        if (pincnt == 7 && strncmp(pin, "777#", 5) == 0) {
             uart_puts("^LED 2 2$");
             uart_puts("^BEEP 2 $\n");
             pincnt = 0;
+            memset(pin, '\0', sizeof(pin));
+            PORTA &= ~(1 << PA2);
+            _delay_ms(500);
+            PORTA |= (1 << PA2);
+        } else if (pincnt == 4 && strncmp(pin, "666#", 5) == 0) {
+            uart_puts("^LED 2 2$");
+            uart_puts("^BEEP 2 $\n");
+            pincnt = 0;
+            memset(pin, '\0', sizeof(pin));
+            PORTA &= ~(1 << PA3);
+            _delay_ms(500);
+            PORTA |= (1 << PA3);
         } else if (c == '#') {
             uart_puts("^LED 1 2$^BEEP 2 $");
             //uart_puts("^BEEP 2 $\n");
             pincnt = 0;
+            memset(pin, '\0', sizeof(pin));
         }
             
     }
@@ -74,6 +88,10 @@ static void handle_command(const char *buffer) {
 
 int main() {
     char bufcopy[10];
+
+    DDRA = (1 << PA2) | (1 << PA3);
+    PORTA = (1 << PA2) | (1 << PA3);
+
 
     UBRR0H = UBRRH_VALUE;
     UBRR0L = UBRRL_VALUE;
