@@ -98,10 +98,11 @@ sub handle_pin {
 
     say "PIN $pin was entered";
     if ($pin eq '3344') {
-        $p->write("^LED 1 2\$\n");
+        $p->write("^LED 2 2\$\n");
+        $p->write("^BEEP 2 \$\n");
         $p->write_drain while buffer($p, 'out') > 0;
     } else {
-        $p->write("^LED 2 2\$\n");
+        $p->write("^LED 1 2\$\n");
         $p->write("^BEEP 2 \$\n");
         $p->write_drain while buffer($p, 'out') > 0;
     }
