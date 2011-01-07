@@ -149,16 +149,21 @@ static void beep(const uint16_t ms) {
     ICR1 = 320;  // 4kHz PWM
 
     OCR1A = ICR1 / 1; // 50% duty cycle
+    PORTD |= (1 << PD4);
     /* XXX: don't delay but set the timer back to normal in the LED timer */
     _delay_ms(ms);
+    PORTD &= ~(1 << PD4);
     TCCR1A = 0;
 }
 
 static void handle_command(char *buffer) {
     if (strncmp(buffer, "^BEEP", strlen("^BEEP")) == 0) {
+#if 0
         if (buffer[6] == '1')
             beep(100);
-        else beep(500);
+        else beep(100);
+#endif
+    PORTD &= ~(1 << PD4);
         return;
     }
 
@@ -198,7 +203,7 @@ int main() {
     UCSR0C = (1<<UCSZ00) | (1<<UCSZ01);
 
     /* PD5, PD6, PD7 und PB0 sind die anderen */
-    DDRD = 0;
+    DDRD = (1 << PD4);
     PORTD = (1 << PD5) | (1 << PD6) | (1 << PD7);
 
     DDRB = 0;
@@ -242,6 +247,7 @@ int main() {
                 if (d_cnt[col][row] != 4)
                     continue;
 
+PORTD |= (1 << PD4);
                 /* button at (col, row) was pressed (and debounced) */
 
                 /* increase counter so we get the next event for this button
@@ -253,6 +259,10 @@ int main() {
                 strncpy(buffer, "^PAD c  $\r\n", strlen("^PAD c  $\r\n"));
                 buffer[5] = chars[col][row];
                 uart_puts(buffer);
+    /* XXX: don't delay but set the timer back to normal in the LED timer */
+    //_delay_ms(100);
+    //PORTD &= ~(1 << PD4);
+
             }
         }
     }
