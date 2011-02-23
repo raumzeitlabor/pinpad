@@ -1,0 +1,80 @@
+30 Hz PWM, also Timer 1 (16-bit), Prescaler auf 64, Fast PWM mode
+
+Compare Mode: Clear on compare match (1, 0)
+
+Waveform Generation bits alle auf 1
+
+ICNC1 auf 1 (noise canceler aktivieren)
+ICES1 auf 0 (bei fallender Flanke)
+
+channel b (OC1B → PD4, dritter von unten)
+
+TCCR1A = (1 << COM1B1) | (1 << WGM11) | (1 << WGM10);
+TCCR1B = (1 << ICNC1) | (1 << ICES1) | (1 << WGM13) | (1 << WGM12) | (1 << CS11) | (1 << CS10);
+
+page 135
+
+3855
+
+
+-----------
+zustände:
+
+ 1 - nichts tun
+ 2 - öffnen
+ 3 - schließen
+ 4 - 
+ 5
+ 6
+ 7
+ 8
+ 9
+10
+11
+12 - sensor 1 ist low
+13 - sensor 1 ist high
+14 - sensor 2 ist low
+15 - sensor 2 ist high
+16
+
+5 bits:
+5 - reserved
+4 - aktionscode
+3 - aktionscode
+2 - sensor 1
+1 - sensor 2
+
+
+ 1 00001 - NOP, nicht abgeschlossen
+ 2 00010 - NOP, abgeschlossen
+ 3 00011
+ 4 00100 - öffnen (befehl)
+ 5 00101 - öffnend, offen
+ 6 00110 - öffnend, abgeschlossen
+ 7 00111
+ 8 01000 - schließen (befehl)
+ 9 01001 - schließend, nicht abgeschlossen
+10 01010 - schließend, abgeschlossen
+11 01011
+12 01100
+13 01101
+14 01110
+15 01111
+16 10000
+
+----
+ablauf:
+• 250ms wird eingekoppelt
+• dann wird solange gedreht, bis der ADC3 (schließen) oder ADC4 (öffnen) mehr als 0.8V messen. Sofern man anstößt, dreht man ein bisschen zurück (150ms in die andere Richtung). Alternativ, wenn man einen konsistenten Zustand der Sensoren misst, hört man sofort auf.
+• 250ms wird ausgekoppelt
+enum {
+	    STATE_NOP = 0,
+	        STATE_BROKEN, /* alles kaputt, motor kriegt keinen strom */
+		    STATE_OPEN_EINKOPPELN, /* Motor soll eingekoppelt werden */
+		        STATE_OPENING, /*  Motor soll in Öffnungsrichtung gedreht werden */
+			    STATE_ADC_OPEN_TRIGGER, /* ADC4 (öffnen) soll ausgelesen werden */
+			        STATE_ADC_OPEN_RESULT, /* ADC4 hat ein ergebnis */
+				    STATE_OPENED, /* ADC ist 3 */
+				        STATE_OPENED_BACK, /* Motor in Schließrichtung für 250ms gedreht werden */
+					    STATE_OPEN_AUSKOPPELN
+
