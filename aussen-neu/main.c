@@ -234,8 +234,8 @@ int main() {
     sei();
 
     int c;
-    char buffer[12];
-    buffer[11] = '\0';
+    char keypress_buffer[COMMAND_BUFFER_SIZE + strlen("\r\n")] =
+        "^PAD c                               $\r\n";
     char bufcopy[COMMAND_BUFFER_SIZE];
     for (;;) {
         /* Handle commands received on the UART */
@@ -254,9 +254,8 @@ int main() {
             if (sample != lookup_table[c].state ||
                 lookup_table[c].debounce != DEBOUNCE_MS)
                 continue;
-            strncpy(buffer, "^PAD c  $\r\n", strlen("^PAD c  $\r\n"));
-            buffer[5] = lookup_table[c].key;
-            uart2_puts(buffer);
+            keypress_buffer[5] = lookup_table[c].key;
+            uart2_puts(keypress_buffer);
             lookup_table[c].debounce = DEBOUNCE_MS+1;
         }
     }
