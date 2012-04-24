@@ -155,11 +155,9 @@ static void handle_command(char *buffer) {
     }
 
     if (strncmp(buffer, "^PING", strlen("^PING")) == 0) {
-        char buf[12];
-        strncpy(buf, "^PONG cc$\r\n\0", strlen("^PONG cc$\r\n") + 1);
-        buf[6] = buffer[6];
-        buf[7] = buffer[7];
-        uart2_puts(buf);
+        /* Modify the buffer in place and send it back */
+        buffer[2] = 'O';
+        uart2_puts(buffer);
         return;
     }
 
