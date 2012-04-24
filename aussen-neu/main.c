@@ -41,8 +41,12 @@ static struct lookup_entry {
     { 0xBE, 0, '#' }
 };
 
-/* buffer for UART input */
-static volatile char ibuffer[10];
+/* Buffer for UART input. This is 39 bytes because the longest command is the
+ * LCD command which has 2 bytes for header/footer, 3 bytes for "LCD", one
+ * space and 32 bytes of payload, followed by a trailing 0-byte for
+ * printability. */
+#define COMMAND_BUFFER_SIZE (strlen("^$") + strlen("LCD ") + 32 + 1)
+static volatile char ibuffer[COMMAND_BUFFER_SIZE];
 static volatile uint8_t ucnt = 0;
 
 static volatile uint16_t beepcnt = 0;
@@ -118,7 +122,7 @@ ISR(USART0_RX_vect) {
     /* If the current buffer is not processed yet, we cannot accept the packet
      * (this should rarely happen as the main loop checks for complete buffers,
      * copies them and handles them) */
-    if (ibuffer[8] == '$') {
+    if (ibuffer[sizeof(ibuffer) - 2] == '$') {
         return;
     }
 
@@ -127,14 +131,14 @@ ISR(USART0_RX_vect) {
         return;
 
     /* For the last byte of the buffer, we expect '$' (end of packet) */
-    if (ucnt == 8 && byte != '$')
+    if (ucnt == (sizeof(ibuffer) - 2) && byte != '$')
         return;
 
     /* Save the byte */
     ibuffer[ucnt] = byte;
     ucnt++;
 
-    if (ucnt == 9)
+    if (ucnt == (sizeof(ibuffer) - 1))
         ucnt = 0;
 }
 
@@ -202,8 +206,7 @@ int main() {
     _delay_ms(250);
     PORTB = 0;
 
-    ibuffer[8] = '\0';
-    ibuffer[9] = '\0';
+    memset((void*)ibuffer, '\0', sizeof(ibuffer));
 
     uart2_init();
     uart2_puts("Initializing RS485\r\n");
@@ -233,14 +236,14 @@ int main() {
     int c;
     char buffer[12];
     buffer[11] = '\0';
-    char bufcopy[10];
+    char bufcopy[COMMAND_BUFFER_SIZE];
     for (;;) {
         /* Handle commands received on the UART */
-        if (ibuffer[8] == '$') {
-            strncpy(bufcopy, ibuffer, sizeof(bufcopy));
+        if (ibuffer[sizeof(ibuffer)-2] == '$') {
+            strncpy(bufcopy, (const char *)ibuffer, sizeof(bufcopy));
             /* change the end of packet marker in memory so that the next
              * packet will be accepted by the RX interrupt handler */
-            ibuffer[8] = '\0';
+            ibuffer[sizeof(ibuffer)-2] = '\0';
 
             handle_command(bufcopy);
         }
