@@ -47,6 +47,18 @@ static volatile uint8_t ucnt = 0;
 
 static volatile uint16_t beepcnt = 0;
 
+static void uart1_init() {
+    /* activate second uart */
+    UBRR0H = UBRRH_VALUE;
+    UBRR0L = UBRRL_VALUE;
+
+    /* Generate an interrupt on incoming data, enable receiver/transmitter */
+    UCSR0B = (1 << RXCIE0) | (1 << RXEN0) | (1 << TXEN0);
+
+    /* frame format: 8N1 */
+    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+}
+
 static void uart2_init() {
     /* activate second uart */
     UBRR1H = UBRRH_VALUE;
@@ -88,21 +100,27 @@ ISR(TIMER0_OVF_vect) {
 }
 
 /*
- * Interrupt für Aktivität auf dem UART
+ * Auf UART 1 (zum Debuggen) haben wir ein Line Echo.
  *
  */
 ISR(USART1_RX_vect) {
     uint8_t byte = UDR1;
     UDR1 = byte;
+}
+
+/*
+ * Interrupt für Aktivität auf dem UART
+ *
+ */
+ISR(USART0_RX_vect) {
+    uint8_t byte = UDR0;
 
     /* If the current buffer is not processed yet, we cannot accept the packet
      * (this should rarely happen as the main loop checks for complete buffers,
      * copies them and handles them) */
     if (ibuffer[8] == '$') {
-        PORTB |= (1 << PB0);
         return;
     }
-    PORTB &= ~(1 << PB0);
 
     /* For the first byte of the buffer, we expect '^' (start of packet) */
     if (ucnt == 0 && byte != '^')
@@ -189,14 +207,15 @@ int main() {
 
     uart2_init();
     uart2_puts("Initializing RS485\r\n");
+    uart1_init();
 
-    uart2_puts("Done, entering mainloop2\r\n");
+    uart2_puts("Waiting for LCD...\r\n");
 
     lcd_init(LCD_DISP_ON);
     uart2_puts("initialized LCD\r\n");
     lcd_clrscr();
     lcd_puts("pinpad ready\nself-test ok");
-    uart2_puts("done.\r\n");
+    uart2_puts("done. now accepting cmds\r\n");
 
     /* Timer aufsetzen: nach 1 ms soll der Interrupt ausgelöst werden. */
     /* 8 bit counter (TIMER0) */
