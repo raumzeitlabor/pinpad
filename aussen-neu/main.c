@@ -22,6 +22,8 @@
 /* Nach 40ms erkanntem Druck wird eine Taste als gedrückt erkannt */
 #define DEBOUNCE_MS 40
 
+static uint16_t led_state[4] = { 0, 0, 0, 0 };
+
 static struct lookup_entry {
     uint8_t state;
     uint8_t debounce;
@@ -83,6 +85,15 @@ static void uart2_puts(char *str) {
     }
 }
 
+static void uart_puts(char *str) {
+    char *walk;
+    for (walk = str; *walk != '\0'; walk++) {
+        while ( !( UCSR0A & (1<<UDRE0)) );
+        UDR0 = (unsigned char)*walk;
+    }
+}
+
+
 /*
  * Timer-Interrupt. Wird alle 1ms getriggert.
  *
@@ -92,6 +103,12 @@ ISR(TIMER0_OVF_vect) {
     if (beepcnt > 0 && --beepcnt == 0)
         /* Summer deaktivieren */
         PORTB &= ~(1 << PB4);
+
+    int idx;
+    for (idx = 0; idx < 4; idx++) {
+        if (led_state[idx] > 0 && --(led_state[idx]) == 0)
+            PORTB &= ~(1 << idx);
+    }
 
     /* Debouncing */
     uint8_t sample = (PINA | (1 << 3));
@@ -157,22 +174,26 @@ static void handle_command(char *buffer) {
     if (strncmp(buffer, "^PING", strlen("^PING")) == 0) {
         /* Modify the buffer in place and send it back */
         buffer[2] = 'O';
-        uart2_puts(buffer);
+        uart_puts(buffer);
         return;
     }
 
+    // example:
+    // ^LED 0 250                           $ (rot oben)
+    // ^LED 1 250                           $ (grün oben)
+    // (beides zusammen ergibt orange)
+    // ^LED 2 250                           $ (rot unten)
+    // ^LED 3 250                           $ (grün unten)
+    // ^BEEP 1                              $
     if (strncmp(buffer, "^LED", strlen("^LED")) == 0) {
-        //int idx = (buffer[5] == '1' ? 0 : 1);
-        //int state;
-        //if (buffer[7] == '1')
-        //    state = 1;
-        //else if (buffer[7] == '2')
-        //    state = 2;
-        //else state = 3;
-        //led_state[idx] = state;
+        int idx = (buffer[5] - '0');
+        if (idx < 0 || idx > 3)
+            return;
 
-        //DDRC |= (1 << (PC1 + idx));
-        //PORTC |= (1 << (PC1 + idx));
+        if (sscanf(buffer + strlen("^LED 0 "), "%u", &(led_state[idx])) != 1)
+            return;
+
+        PORTB |= (1 << idx);
     }
 }
 
@@ -253,7 +274,7 @@ int main() {
                 lookup_table[c].debounce != DEBOUNCE_MS)
                 continue;
             keypress_buffer[5] = lookup_table[c].key;
-            uart2_puts(keypress_buffer);
+            uart_puts(keypress_buffer);
             lookup_table[c].debounce = DEBOUNCE_MS+1;
         }
     }
