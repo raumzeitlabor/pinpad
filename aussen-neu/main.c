@@ -164,6 +164,8 @@ static void handle_command(char *buffer) {
         /* Summer-Ausschalten auf 100ms bzw. 500ms setzen */
         if (buffer[6] == '1')
             beepcnt = 100;
+        else if (buffer[6] == '2')
+            beepcnt = 25;
         else beepcnt = 500;
 
         /* Summer aktivieren */
@@ -194,6 +196,26 @@ static void handle_command(char *buffer) {
             return;
 
         PORTB |= (1 << idx);
+        return;
+    }
+
+    // ^LCD Herzlich Willkommen im RZL      $
+    // ^LCD PIN: *                          $
+    // ^LCD PIN: **                         $
+    if (strncmp(buffer, "^LCD", strlen("^LCD")) == 0) {
+        lcd_clrscr();
+        char *walk = buffer + strlen("^LCD ") + 31;
+        while (*walk == ' ')
+            walk--;
+        *(++walk) = '\0';
+        lcd_puts(buffer + strlen("^LCD "));
+        return;
+    }
+
+    // ^LCH *                               $
+    if (strncmp(buffer, "^LCH", strlen("^LCH")) == 0) {
+        lcd_putc(buffer[strlen("^LCD ")]);
+        return;
     }
 }
 
