@@ -47,7 +47,8 @@ static struct lookup_entry {
  * LCD command which has 2 bytes for header/footer, 3 bytes for "LCD", one
  * space and 32 bytes of payload, followed by a trailing 0-byte for
  * printability. */
-#define COMMAND_BUFFER_SIZE (strlen("^$") + strlen("LCD ") + 32 + 1)
+//#define COMMAND_BUFFER_SIZE (strlen("^$") + strlen("LCD ") + 32 + 1)
+#define COMMAND_BUFFER_SIZE (2 + 4 + 32 + 1)
 static volatile char ibuffer[COMMAND_BUFFER_SIZE];
 static volatile uint8_t ucnt = 0;
 
@@ -275,7 +276,7 @@ int main() {
     sei();
 
     int c;
-    char keypress_buffer[COMMAND_BUFFER_SIZE + strlen("\r\n")] =
+    char keypress_buffer[COMMAND_BUFFER_SIZE + 2] =
         "^PAD c                               $\r\n";
     char bufcopy[COMMAND_BUFFER_SIZE];
     for (;;) {
