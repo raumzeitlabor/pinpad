@@ -20,7 +20,7 @@
 #include "lcd.h"
 
 /* Nach 40ms erkanntem Druck wird eine Taste als gedrückt erkannt */
-#define DEBOUNCE_MS 40
+#define DEBOUNCE_MS 10
 
 static uint16_t led_state[4] = { 0, 0, 0, 0 };
 
@@ -116,9 +116,13 @@ ISR(TIMER0_OVF_vect) {
     uint8_t c;
     for (c = 0; c < sizeof(lookup_table) / sizeof(struct lookup_entry); c++)
         if (sample == lookup_table[c].state) {
-            if (lookup_table[c].debounce < DEBOUNCE_MS)
+            if (lookup_table[c].debounce < DEBOUNCE_MS) {
                 lookup_table[c].debounce++;
-        } else lookup_table[c].debounce = 0;
+			}
+        }
+		else {
+			lookup_table[c].debounce = 0;
+		}
 }
 
 /*
@@ -279,6 +283,8 @@ int main() {
     char keypress_buffer[COMMAND_BUFFER_SIZE + 2] =
         "^PAD c                               $\r\n";
     char bufcopy[COMMAND_BUFFER_SIZE];
+
+
     for (;;) {
         /* Handle commands received on the UART */
         if (ibuffer[sizeof(ibuffer)-2] == '$') {
@@ -292,13 +298,19 @@ int main() {
 
         uint8_t sample = (PINA | (1 << 3));
 
+		bool button_debounced = true;
+
         for (c = 0; c < sizeof(lookup_table) / sizeof(struct lookup_entry); c++) {
-            if (sample != lookup_table[c].state ||
-                lookup_table[c].debounce != DEBOUNCE_MS)
-                continue;
+            if (sample != lookup_table[c].state || lookup_table[c].debounce != DEBOUNCE_MS) {
+                button_debounced = false;
+				continue;
+			}
             keypress_buffer[5] = lookup_table[c].key;
             uart_puts(keypress_buffer);
             lookup_table[c].debounce = DEBOUNCE_MS+1;
         }
+		if (button_debounced) {
+			_delay_ms(80);
+		}
     }
 }
