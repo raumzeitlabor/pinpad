@@ -14,7 +14,7 @@
 #include <util/delay.h>
 #include <stdbool.h>
 #include <stdint.h>
-#define BAUD 38400
+#define BAUD 9600
 #include <util/setbaud.h>
 
 #include "lcd.h"
